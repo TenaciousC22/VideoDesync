@@ -1,5 +1,7 @@
 from moviepy.editor import *
 import csv
+import os
+import glob
 
 #Import Silence buffers
 def importSilence():
@@ -33,15 +35,24 @@ def writeCut(clip, path, aFile, mod, fType):
 	modclip=clip.subclip("00:00:00."+mod)
 	modclip.write_audiofile(path+aFile+"-"+mod+fType)
 
-def createSubclips(path, vFile, fType):
+def saveSubclips(vPath, path, fType):
+	cPath=os.getcwd()
 	intervals=extractIntervals(path)
+	vFile=glob.glob(path+"*"+fType)
+	vFile=vFile[0]
+	for x in range(len(vFile),0,-1):
+		if vFile[x-1]=="/":
+			vFile=vFile[x:-4]
+			break
+	print(vFile)
 	for x in range(len(intervals)):
 		clip=VideoFileClip(path+vFile+fType)
 		if x==len(intervals)-1:
 			sub=clip.subclip(intervals[x])
 		else:
 			sub=clip.subclip(intervals[x][0],intervals[x][1])
-		sub.write_videofile(path+"subclips/"+vFile+"_subclip"+str(x+1)+fType)
+		os.mkdir(cPath+"/"+vPath+"subclips/"+vFile+str(x+1))
+		sub.write_videofile(vPath+"subclips/"+vFile+str(x+1)+"/"+vFile+str(x+1)+fType)
 
 def extractIntervals(path):
 	holder=open(path+"intervals.csv","r")
@@ -59,5 +70,9 @@ def extractIntervals(path):
 		holder.append([intervals[x],intervals[x+1]])
 	holder.append(intervals[len(intervals)-1])
 	intervals=holder
-	#print(intervals)
 	return intervals
+
+def createSubclips(vPath, fType):
+	fulls=glob.glob(vPath+"full/*")
+	saveSubclips(vPath,fulls[0]+"/",fType)
+	#print(fulls)
