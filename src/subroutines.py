@@ -44,7 +44,6 @@ def saveSubclips(vPath, path, fType):
 		if vFile[x-1]=="/":
 			vFile=vFile[x:-4]
 			break
-	print(vFile)
 	for x in range(len(intervals)):
 		clip=VideoFileClip(path+vFile+fType)
 		if x==len(intervals)-1:
@@ -74,5 +73,39 @@ def extractIntervals(path):
 
 def createSubclips(vPath, fType):
 	fulls=glob.glob(vPath+"full/*")
-	saveSubclips(vPath,fulls[0]+"/",fType)
+	for x in range(len(fulls)):
+		saveSubclips(vPath,fulls[x]+"/",fType)
 	#print(fulls)
+
+def offsetAudio(vPath, aPath, offsets, fType):
+	temp=glob.glob(aPath+"silence/*")
+	temp.sort()
+	silence=[]
+	for x in range(len(temp)):
+		silence.append(AudioFileClip(temp[x]))
+	#print(silence)
+	subs=glob.glob(vPath+"subclips/*")
+	subs.sort()
+	#print(subs)
+	buildOffsetClips(subs[0], silence, offsets, fType)
+
+
+def buildOffsetClips(vPath, silence, offsets, fType):
+	for x in range(len(vPath),0,-1):
+		if vPath[x-1]=="/":
+			vFile=vPath[x:]
+			break
+	vBase=VideoFileClip(vPath+"/"+vFile+fType)
+	aBase=vBase.audio
+	vTemp=vBase
+	aOffset=[]
+	for x in range(len(offsets)):
+		aTemp=concatenate_audioclips([silence[x],aBase])
+		aTemp.write_audiofile(vPath+"/+"+offsets[x]+".mp3")
+		vTemp.audio=aTemp
+		vTemp.write_videofile(vPath+"/"+vFile+"+"+offsets[x]+fType)
+		aBase=vBase.audio
+		aTemp=concatenate_audioclips([aBase.subclip("00:00:00."+offsets[x]),silence[x]])
+		#vTemp.set_audio(aTemp)
+		#vTemp.write_videofile(vPath+"/"+vFile+"-"+offsets[x]+fType)
+	print("Done for "+vFile)

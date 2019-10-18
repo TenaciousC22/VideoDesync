@@ -9,4 +9,5 @@ vPath="../bin/video/"
 aPath="../bin/sound/"
 
 if __name__=="__main__":
-	createSubclips(vPath, ".mp4")
+	#createSubclips(vPath, ".mp4")
+	offsetAudio(vPath, aPath, offsets, ".mp4")
