@@ -93,19 +93,18 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 		if vPath[x-1]=="/":
 			vFile=vPath[x:]
 			break
-	vBase=VideoFileClip(vPath+"/"+vFile+fType)
-	aBase=vBase.audio
-	vTemp=vBase
 	aOffset=[]
 	for x in range(len(offsets)):
-		aTemp=concatenate_audioclips([silence[x],aBase])
-		aTemp.write_audiofile(vPath+"/+"+offsets[x]+".mp3")
+		vBase=VideoFileClip(vPath+"/"+vFile+fType)
+		aBase=vBase.audio
+		vTemp=vBase
+		temp=aBase.subclip("00:00:00."+offsets[x],aBase.duration)
+		#aTemp.write_audiofile(vPath+"/+"+offsets[x]+".mp3")
+		aTemp=concatenate_audioclips([temp,silence[x]])
 		vTemp.audio=aTemp
 		vTemp.write_videofile(vPath+"/"+vFile+"+"+offsets[x]+fType)
-		aBase=vBase.audio
-		aTemp=concatenate_audioclips([aBase.subclip("00:00:00."+offsets[x]),silence[x]])
-		#vTemp.set_audio(aTemp)
-		#vTemp.write_videofile(vPath+"/"+vFile+"-"+offsets[x]+fType)
 	print("Done for "+vFile)
 
 	
+	#For when the Audio comes before Video
+	#aBase.subclip("00:00:00."+offsets[x],aBase.duration)
