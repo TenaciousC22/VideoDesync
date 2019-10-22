@@ -59,16 +59,14 @@ def extractIntervals(path):
 	y=0
 	for line in holder:
 		raw=line
+		if len(raw)<13:
+			intervals.append(raw)
+			break
 		for x in range(len(raw)):
 			if raw[x]==",":
-				intervals.append(raw[y:x-1])
-				y=x+1
-	intervals.append(raw[y:len(raw)-1])
-	holder=[]
-	for x in range(len(intervals)-1):
-		holder.append([intervals[x],intervals[x+1]])
-	holder.append(intervals[len(intervals)-1])
-	intervals=holder
+				intervals.append([raw[0:x-1],raw[x+1:-1]])
+				break
+	print(intervals)
 	return intervals
 
 def createSubclips(vPath, fType):
@@ -109,3 +107,5 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 		#vTemp.set_audio(aTemp)
 		#vTemp.write_videofile(vPath+"/"+vFile+"-"+offsets[x]+fType)
 	print("Done for "+vFile)
+
+	
