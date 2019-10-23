@@ -99,8 +99,15 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 		aBase=vBase.audio
 		vTemp=vBase
 		temp=aBase.subclip("00:00:00."+offsets[x],aBase.duration)
-		#aTemp.write_audiofile(vPath+"/+"+offsets[x]+".mp3")
 		aTemp=concatenate_audioclips([temp,silence[x]])
+		vTemp.audio=aTemp
+		vTemp.write_videofile(vPath+"/"+vFile+"-"+offsets[x]+fType)
+		vBase=VideoFileClip(vPath+"/"+vFile+fType)
+		aBase=vBase.audio
+		vTemp=vBase
+		clipper=audioClipMask(offsets[x],aBase.duration)
+		temp=aBase.subclip("00:00:00.000",clipper)
+		aTemp=concatenate_audioclips([silence[x],temp])
 		vTemp.audio=aTemp
 		vTemp.write_videofile(vPath+"/"+vFile+"+"+offsets[x]+fType)
 	print("Done for "+vFile)
@@ -108,3 +115,24 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 	
 	#For when the Audio comes before Video
 	#aBase.subclip("00:00:00."+offsets[x],aBase.duration)
+
+#Helper funtion to perform arithmatic on time strings in the format "HH:MM:SS.mm"
+def audioClipMask(offset, duration):
+	iOffset=int(offset)
+	iDur=int(duration*1000)
+	nDur=iDur-iOffset
+	msDur=str(nDur%1000)
+	nDur=int(nDur/1000)
+	sDur=str(nDur%60)
+	nDur=int(nDur/60)
+	mDur=str(nDur%60)
+	nDur=int(nDur/60)
+	hDur=str(nDur)
+	if len(sDur)==1:
+		sDur="0"+sDur
+	if len(mDur)==1:
+		mDur="0"+mDur
+	if len(hDur)==1:
+		hDur="0"+hDur
+	nDur=hDur+":"+mDur+":"+sDur+"."+msDur
+	return nDur
