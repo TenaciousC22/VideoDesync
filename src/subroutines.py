@@ -11,6 +11,19 @@ def importSilence():
 	clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
 	return clips
 
+def convertToMP4(vPath):
+	fulls=glob.glob(vPath+"full/*")
+	fulls.sort()
+	for x in range(len(fulls)):
+		path=fulls[x]
+		folder=glob.glob(path+"/*")
+		for y in range(len(folder)):
+			file=folder[y]
+			print(file)
+			if file[-3:]=="MOV":
+				video=VideoFileClip(file)
+				video.write_videofile(vPath+"full/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4",codec="libx264")
+
 #Creates all offset audio files (+ and - offsets)
 #Variables are as follows
 #clips: array of clips for padding
@@ -39,6 +52,7 @@ def saveSubclips(vPath, path, fType):
 	cPath=os.getcwd()
 	intervals=extractIntervals(path)
 	vFile=glob.glob(path+"*"+fType)
+	vFile.sort()
 	vFile=vFile[0]
 	for x in range(len(vFile),0,-1):
 		if vFile[x-1]=="/":
@@ -85,7 +99,8 @@ def offsetAudio(vPath, aPath, offsets, fType):
 	subs=glob.glob(vPath+"subclips/*")
 	subs.sort()
 	#print(subs)
-	buildOffsetClips(subs[0], silence, offsets, fType)
+	for i in range(len(subs)):
+		buildOffsetClips(subs[i], silence, offsets, fType)
 
 
 def buildOffsetClips(vPath, silence, offsets, fType):
