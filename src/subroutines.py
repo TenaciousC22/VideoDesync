@@ -11,6 +11,7 @@ def importSilence():
 	clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
 	return clips
 
+#convert .mov files to mp4 files using the x264 codec
 def convertToMP4(vPath):
 	fulls=glob.glob(vPath+"full/*")
 	fulls.sort()
@@ -23,6 +24,18 @@ def convertToMP4(vPath):
 			if file[-3:]=="MOV":
 				video=VideoFileClip(file)
 				video.write_videofile(vPath+"full/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4",codec="libx264")
+
+def addFixedAudio(vPath):
+	fulls=glob.glob(vPath+"full/*")
+	fulls.sort()
+	for x in range(len(fulls)):
+		temp=glob.glob(fulls[x]+"/*")
+		if len(temp)==3:
+			video=VideoFileClip(fulls[x]+"/speaker"+str(x+1)+".mp4")
+			audio=AudioFileClip(fulls[x]+"/modified.wav")
+			#print(audio.duration)
+			final=video.set_audio(audio)
+			final.write_videofile(fulls[x]+"/speaker"+str(x+1)+".mp4")
 
 #Creates all offset audio files (+ and - offsets)
 #Variables are as follows
@@ -48,24 +61,24 @@ def writeCut(clip, path, aFile, mod, fType):
 	modclip=clip.subclip("00:00:00."+mod)
 	modclip.write_audiofile(path+aFile+"-"+mod+fType)
 
-def saveSubclips(vPath, path, fType):
+def saveSubclips(vPath, path, fType, number):
 	cPath=os.getcwd()
 	intervals=extractIntervals(path)
 	vFile=glob.glob(path+"*"+fType)
 	vFile.sort()
 	vFile=vFile[0]
+	if not os.path.isdir(cPath+"/"+vPath+"subclips/speaker"+str(number+1)):
+		os.mkdir(cPath+"/"+vPath+"subclips/speaker"+str(number+1))
+		for x in range(len(intervals)):
+			os.mkdir(cPath+"/"+vPath+"subclips/speaker"+str(number+1)+"/clip"+str(x+1))
 	for x in range(len(vFile),0,-1):
 		if vFile[x-1]=="/":
 			vFile=vFile[x:-4]
 			break
 	for x in range(len(intervals)):
 		clip=VideoFileClip(path+vFile+fType)
-		if x==len(intervals)-1:
-			sub=clip.subclip(intervals[x])
-		else:
-			sub=clip.subclip(intervals[x][0],intervals[x][1])
-		os.mkdir(cPath+"/"+vPath+"subclips/"+vFile+str(x+1))
-		sub.write_videofile(vPath+"subclips/"+vFile+str(x+1)+"/"+vFile+str(x+1)+fType)
+		sub=clip.subclip(intervals[x][0],intervals[x][1])
+		sub.write_videofile(vPath+"subclips/speaker"+str(number+1)+"/clip"+str(x+1)+"/base"+fType)
 
 def extractIntervals(path):
 	holder=open(path+"intervals.csv","r")
@@ -85,8 +98,12 @@ def extractIntervals(path):
 
 def createSubclips(vPath, fType):
 	fulls=glob.glob(vPath+"full/*")
+	fulls.sort()
+	cwd=os.getcwd()
+	if not os.path.isdir(cwd+"/"+vPath+"subclips"):
+		os.mkdir(cwd+"/"+vPath+"subclips/")
 	for x in range(len(fulls)):
-		saveSubclips(vPath,fulls[x]+"/",fType)
+		saveSubclips(vPath,fulls[x]+"/",fType, x)
 	#print(fulls)
 
 def offsetAudio(vPath, aPath, offsets, fType):
@@ -96,18 +113,20 @@ def offsetAudio(vPath, aPath, offsets, fType):
 	for x in range(len(temp)):
 		silence.append(AudioFileClip(temp[x]))
 	#print(silence)
-	subs=glob.glob(vPath+"subclips/*")
-	subs.sort()
+	speakers=glob.glob(vPath+"subclips/*")
+	speakers.sort()
 	#print(subs)
-	for i in range(len(subs)):
-		buildOffsetClips(subs[i], silence, offsets, fType)
+	for i in range(len(speakers)):
+		clips=glob.glob(speakers[i]+"/*")
+		clips.sort()
+		clips.sort(key=len)
+		#print(clips)
+		for x in range(len(clips)):
+			buildOffsetClips(clips[x], silence, offsets, fType)
 
 
 def buildOffsetClips(vPath, silence, offsets, fType):
-	for x in range(len(vPath),0,-1):
-		if vPath[x-1]=="/":
-			vFile=vPath[x:]
-			break
+	vFile="base"
 	aOffset=[]
 	for x in range(len(offsets)):
 		vBase=VideoFileClip(vPath+"/"+vFile+fType)
@@ -116,7 +135,7 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 		temp=aBase.subclip("00:00:00."+offsets[x],aBase.duration)
 		aTemp=concatenate_audioclips([temp,silence[x]])
 		vTemp.audio=aTemp
-		vTemp.write_videofile(vPath+"/"+vFile+"-"+offsets[x]+fType)
+		vTemp.write_videofile(vPath+"/"+"I"+offsets[x]+fType)
 		vBase=VideoFileClip(vPath+"/"+vFile+fType)
 		aBase=vBase.audio
 		vTemp=vBase
@@ -124,7 +143,7 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 		temp=aBase.subclip("00:00:00.000",clipper)
 		aTemp=concatenate_audioclips([silence[x],temp])
 		vTemp.audio=aTemp
-		vTemp.write_videofile(vPath+"/"+vFile+"+"+offsets[x]+fType)
+		vTemp.write_videofile(vPath+"/"+"B"+offsets[x]+fType)
 	print("Done for "+vFile)
 
 	
@@ -151,3 +170,64 @@ def audioClipMask(offset, duration):
 		hDur="0"+hDur
 	nDur=hDur+":"+mDur+":"+sDur+"."+msDur
 	return nDur
+
+def jumble(vPath):
+	temp=glob.glob(vPath+"subclips/*")
+	for x in range(len(temp)):
+		#This is mostly to ensure that every file has a compatible one to jumble with
+		#viewlen(vPath,x+1)
+		#jumble the audio
+		jumbler(vPath,x+1)
+		print("")
+	#for x in range(len(temp)):
+
+def jumbler(vPath,number):
+	cliplist=glob.glob(vPath+"subclips/speaker"+str(number)+"/*")
+	cliplist.sort()
+	cliplist.sort(key=len)
+	clips=[]
+	index=[]
+	audio=[]
+	for x in range(len(cliplist)):
+		clips.append(VideoFileClip(cliplist[x]+"/base.mp4"))
+	for x in range(len(clips)):
+		index.append(x+1)
+	for x in range(len(clips)):
+		for y in range(x+1,len(clips)):
+			if(clips[y].duration<clips[x].duration):
+				temp=clips[y]
+				clips[y]=clips[x]
+				clips[x]=temp
+				temp=index[y]
+				index[y]=index[x]
+				index[x]=temp
+	for x in range(len(clips)):
+		audio.append(clips[x].audio)
+	x=0
+	for y in range(len(clips)):
+		if(clips[y].duration>clips[x].duration):
+			clips[y-1].audio=audio[x]
+			clips[y-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4")
+			for z in range(x+1,y):
+				clips[z-1].audio=audio[z]
+				clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4")
+			x=y
+	clips[len(clips)-1].audio=audio[x]
+	clips[len(clips)-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4")
+	for z in range(x+1,len(clips)):
+		clips[z-1].audio=audio[z]
+		clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4")
+
+def viewlen(vPath,number):
+	clips=[]
+	lengths=[]
+	cliplist=glob.glob(vPath+"subclips/speaker"+str(number)+"/*")
+	cliplist.sort()
+	cliplist.sort(key=len)
+	for x in range(len(cliplist)):
+		clips.append(VideoFileClip(cliplist[x]+"/base.mp4"))
+	for x in range(len(clips)):
+		lengths.append(clips[x].duration)
+	lengths.sort()
+	for x in range(len(lengths)):
+		print(lengths[x])
