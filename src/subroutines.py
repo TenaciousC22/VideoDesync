@@ -6,9 +6,13 @@ import glob
 #Import Silence buffers
 def importSilence():
 	clips=[]
-	clips.append(AudioFileClip("../bin/sound/silence/060.wav"))
-	clips.append(AudioFileClip("../bin/sound/silence/240.wav"))
-	clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
+	# clips.append(AudioFileClip("../bin/sound/silence/060.wav"))
+	# clips.append(AudioFileClip("../bin/sound/silence/240.wav"))
+	# clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/480.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/600.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/720.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/840.wav"))
 	return clips
 
 #convert .mov files to mp4 files using the x264 codec
@@ -67,6 +71,7 @@ def saveSubclips(vPath, path, fType, number):
 	vFile=glob.glob(path+"*"+fType)
 	vFile.sort()
 	vFile=vFile[0]
+	print(vFile)
 	if not os.path.isdir(cPath+"/"+vPath+"subclips/speaker"+str(number+1)):
 		os.mkdir(cPath+"/"+vPath+"subclips/speaker"+str(number+1))
 		for x in range(len(intervals)):
@@ -76,7 +81,7 @@ def saveSubclips(vPath, path, fType, number):
 			vFile=vFile[x:-4]
 			break
 	for x in range(len(intervals)):
-		clip=VideoFileClip(path+vFile+fType)
+		clip=VideoFileClip(vFile)
 		sub=clip.subclip(intervals[x][0],intervals[x][1])
 		sub.write_videofile(vPath+"subclips/speaker"+str(number+1)+"/clip"+str(x+1)+"/base"+fType)
 
@@ -103,6 +108,7 @@ def createSubclips(vPath, fType):
 	if not os.path.isdir(cwd+"/"+vPath+"subclips"):
 		os.mkdir(cwd+"/"+vPath+"subclips/")
 	for x in range(len(fulls)):
+		print(fulls[x])
 		saveSubclips(vPath,fulls[x]+"/",fType, x)
 	#print(fulls)
 
