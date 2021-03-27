@@ -1,14 +1,18 @@
 from moviepy.editor import *
+import ffmpeg
 import csv
 import os
 import glob
+import math
+import numpy as np
+import scipy as sp
 
 #Import Silence buffers
 def importSilence():
 	clips=[]
-	# clips.append(AudioFileClip("../bin/sound/silence/060.wav"))
-	# clips.append(AudioFileClip("../bin/sound/silence/240.wav"))
-	# clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/060.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/240.wav"))
+	clips.append(AudioFileClip("../bin/sound/silence/360.wav"))
 	clips.append(AudioFileClip("../bin/sound/silence/480.wav"))
 	clips.append(AudioFileClip("../bin/sound/silence/600.wav"))
 	clips.append(AudioFileClip("../bin/sound/silence/720.wav"))
@@ -135,6 +139,7 @@ def buildOffsetClips(vPath, silence, offsets, fType):
 	vFile="base"
 	aOffset=[]
 	for x in range(len(offsets)):
+		print(vPath+"/"+vFile+fType)
 		vBase=VideoFileClip(vPath+"/"+vFile+fType)
 		aBase=vBase.audio
 		vTemp=vBase
@@ -213,16 +218,16 @@ def jumbler(vPath,number):
 	for y in range(len(clips)):
 		if(clips[y].duration>clips[x].duration):
 			clips[y-1].audio=audio[x]
-			clips[y-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4")
+			clips[y-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4",audio_fps=16000)
 			for z in range(x+1,y):
 				clips[z-1].audio=audio[z]
-				clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4")
+				clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4",audio_fps=16000)
 			x=y
 	clips[len(clips)-1].audio=audio[x]
-	clips[len(clips)-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4")
+	clips[len(clips)-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[x])+"/jumble.mp4",audio_fps=16000)
 	for z in range(x+1,len(clips)):
 		clips[z-1].audio=audio[z]
-		clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4")
+		clips[z-1].write_videofile(vPath+"subclips/speaker"+str(number)+"/clip"+str(index[z])+"/jumble.mp4",audio_fps=16000)
 
 def viewlen(vPath,number):
 	clips=[]
@@ -237,3 +242,86 @@ def viewlen(vPath,number):
 	lengths.sort()
 	for x in range(len(lengths)):
 		print(lengths[x])
+
+def audioDownSample():
+
+	for x in range(6):
+		vclip=VideoFileClip("../../MastersStorage/VideosDownScaled/Videos/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4")
+		vclip.write_videofile("../bin/video/full/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4")
+		print("Finished clip "+str(x+1))
+
+	#vclip=VideoFileClip("../bin/video/full/speaker1/speaker1.mp4")
+	#vclip.write_videofile("testVid.mp4",audio_fps=16000)
+	#aclip=vclip.audio
+	#aclip.write_audiofile("test.wav",ffmpeg_params=["-ac", "1"])
+	#aclip.AudioFileClip("test.wav")
+
+	# stream=ffmpeg.input('testVid.mp4')
+	# video=stream.video
+	# audio=stream.audio.filter("-ac",1)
+	# out=ffmpeg.output(audio,video,'testVidOut.mp4')
+	# ffmpeg.overwrite_output(out)
+
+
+	#print('done')
+
+	#THIS IS VERY IMPORTANT
+	#os.system("ffmpeg -i ../bin/video/full/speaker1/speaker1.mp4 -ac 1 testOut.mp4")
+	#ffmpeg -i ..\bin\video\full\speaker1\speaker1.mp4 -ac 1 testOut.mp4
+
+def power(arr):
+	power=0
+	for x in range(len(arr)):
+		power+=(arr[x][0]**2)
+		power+=(arr[x][1]**2)
+
+	power=power/(len(arr)*2)
+	#print(power)
+	return power
+
+def balanceBabble():
+	for x in range(6):
+		for y in range(28):
+			baseNoise=AudioFileClip("../bin/sound/babble.wav")
+			baseVideo=VideoFileClip("../video/subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/base.mp4")
+			baseSignal=baseVideo.audio
+			noiseArr=[]
+			signalArr=[]
+			frames=baseSignal.iter_frames()
+			for value in frames:
+				signalArr.append(value)
+
+			frames=baseNoise.iter_frames()
+			for value in frames:
+				noiseArr.append(value)
+
+			signalPow=power(signalArr)
+			noisePow=power(noiseArr)
+
+			SNR=signalPow/noisePow
+			SNRdb=10*math.log10(SNR)
+
+			print(SNRdb)
+			print("")
+
+			while SNRdb<=-7.1 or SNRdb>=-6.9:
+				if SNRdb<-7.1:
+					if abs(SNRdb-(-7.1))>1:
+						baseNoise=baseNoise.volumex(0.85)
+					else:
+						baseNoise=baseNoise.volumex(0.95)
+				if SNRdb>-6.9:
+					if abs(SNRdb-(-6.9))>1:
+						baseNoise=baseNoise.volumex(1.2)
+					else:
+						baseNoise=baseNoise.volumex(1.02)
+				frames=baseNoise.iter_frames()
+				noiseArr=[]
+				for value in frames:
+					noiseArr.append(value)
+				noisePow=power(noiseArr)
+				SNR=signalPow/noisePow
+				SNRdb=10*math.log10(SNR)
+				print(SNRdb)
+
+			baseNoise.write_audiofile("subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/noise.wav")
