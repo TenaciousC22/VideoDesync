@@ -283,7 +283,7 @@ def balanceBabble():
 	for x in range(6):
 		for y in range(28):
 			baseNoise=AudioFileClip("../bin/sound/babble.wav")
-			baseVideo=VideoFileClip("../video/subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/base.mp4")
+			baseVideo=VideoFileClip("../bin/video/subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/base.mp4")
 			baseSignal=baseVideo.audio
 			noiseArr=[]
 			signalArr=[]
@@ -324,4 +324,4 @@ def balanceBabble():
 				SNRdb=10*math.log10(SNR)
 				print(SNRdb)
 
-			baseNoise.write_audiofile("subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/noise.wav")
+			baseNoise.write_audiofile("../bin/video/subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/-7DbBabble.wav")

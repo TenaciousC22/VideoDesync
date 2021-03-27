@@ -14,9 +14,11 @@ aPath="..\\bin\\sound\\"
 if __name__=="__main__":
 	#convertToMP4(vPath)
 	#addFixedAudio(vPath)
-	createSubclips(vPath, ".mp4")
-	offsetAudio(vPath, aPath, offsets, ".mp4")
-	jumble(vPath)
+	#createSubclips(vPath, ".mp4")
+	#offsetAudio(vPath, aPath, offsets, ".mp4")
+	#jumble(vPath)
+
+	balanceBabble()
 
 	#audioDownSample()
 	#clip=VideoFileClip("../bin/video/subclips/test1/test1.mp4")
