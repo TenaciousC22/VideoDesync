@@ -243,12 +243,26 @@ def viewlen(vPath,number):
 	for x in range(len(lengths)):
 		print(lengths[x])
 
-def audioDownSample():
-
+def convertToMono(vPath, offsets, fType):
+	cwd=os.getcwd()
+	if not os.path.isdir(cwd+"/"+vPath+"monoSubclips"):
+		os.mkdir(cwd+"/"+vPath+"monoSubclips/")
 	for x in range(6):
-		vclip=VideoFileClip("../../MastersStorage/VideosDownScaled/Videos/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4")
-		vclip.write_videofile("../bin/video/full/speaker"+str(x+1)+"/speaker"+str(x+1)+".mp4")
-		print("Finished clip "+str(x+1))
+		if not os.path.isdir(cwd+"/"+vPath+"monoSubclips/speaker"+str(x+1)):
+			os.mkdir(cwd+"/"+vPath+"monoSubclips/speaker"+str(x+1)+"/")
+		for y in range(28):
+			if not os.path.isdir(cwd+"/"+vPath+"monoSubclips/speaker"+str(x+1)+"/clip"+str(y+1)):
+				os.mkdir(cwd+"/"+vPath+"monoSubclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/")
+
+			bPath=vPath+"noiseSubclips/speaker"+str(x+1)+"/clip"+str(y+1)
+			path=vPath+"monoSubclips/speaker"+str(x+1)+"/clip"+str(y+1)
+			#print(path)
+			os.system("ffmpeg -y -i "+bPath+"/base.mp4"+" -ac 1 "+path+"/base.mp4")
+			os.system("ffmpeg -y -i "+bPath+"/jumble.mp4"+" -ac 1 "+path+"/jumble.mp4")
+			for z in range(len(offsets)):
+				os.system("ffmpeg -y -i "+bPath+"/B"+offsets[z]+".mp4"+" -ac 1 "+path+"/B"+offsets[z]+".mp4")
+				os.system("ffmpeg -y -i "+bPath+"/I"+offsets[z]+".mp4"+" -ac 1 "+path+"/I"+offsets[z]+".mp4")
+		
 
 	#vclip=VideoFileClip("../bin/video/full/speaker1/speaker1.mp4")
 	#vclip.write_videofile("testVid.mp4",audio_fps=16000)
@@ -325,3 +339,50 @@ def balanceBabble():
 				print(SNRdb)
 
 			baseNoise.write_audiofile("../bin/video/subclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/-7DbBabble.wav")
+
+def addNoiseAndDownSample(vPath, noiseFile, offsets, fType):
+	cwd=os.getcwd()
+	if not os.path.isdir(cwd+"/"+vPath+"noiseSubclips"):
+		os.mkdir(cwd+"/"+vPath+"noiseSubclips/")
+	aOffset=[]
+	for x in range(6):
+		if not os.path.isdir(cwd+"/"+vPath+"noiseSubclips/speaker"+str(x+1)):
+			os.mkdir(cwd+"/"+vPath+"noiseSubclips/speaker"+str(x+1)+"/")
+		for y in range(28):
+			if not os.path.isdir(cwd+"/"+vPath+"noiseSubclips/speaker"+str(x+1)+"/clip"+str(y+1)):
+				os.mkdir(cwd+"/"+vPath+"noiseSubclips/speaker"+str(x+1)+"/clip"+str(y+1)+"/")
+			#Get source and save paths
+			vPathFull=vPath+"subclips/speaker"+str(x+1)+"/clip"+str(y+1)
+			sPath=vPath+"noiseSubclips/speaker"+str(x+1)+"/clip"+str(y+1)
+
+			#Get the base audio and video files
+			noise=AudioFileClip(vPathFull+"/"+noiseFile)
+			baseVideo=VideoFileClip(vPathFull+"/base"+fType)
+
+			#Clip the noise to the right length
+			clippedNoise=noise.subclip("00:00:00.000",baseVideo.duration)
+
+			#Create the composite audio clip with the noise and the speech and add it to the video
+			newAudio=CompositeAudioClip([baseVideo.audio,clippedNoise])
+			baseVideo.audio=newAudio
+
+			#Save the new file
+			baseVideo.write_videofile(sPath+"/base"+fType,audio_fps=16000)
+
+			#Jumble Audio Replace
+			jumbleVideo=VideoFileClip(vPathFull+"/jumble"+fType)
+			newAudio=CompositeAudioClip([jumbleVideo.audio,clippedNoise])
+			jumbleVideo.audio=newAudio
+			jumbleVideo.write_videofile(sPath+"/jumble"+fType,audio_fps=16000)
+
+			#Noise the audio in the offset files
+			for z in range(len(offsets)):
+				vBase=VideoFileClip(vPathFull+"/"+"I"+offsets[z]+fType)
+				newAudio=CompositeAudioClip([vBase.audio,clippedNoise])
+				vBase.audio=newAudio
+				vBase.write_videofile(sPath+"/"+"I"+offsets[z]+fType,audio_fps=16000)
+
+				vBase=VideoFileClip(vPathFull+"/"+"B"+offsets[z]+fType)
+				newAudio=CompositeAudioClip([vBase.audio,clippedNoise])
+				vBase.audio=newAudio
+				vBase.write_videofile(sPath+"/"+"B"+offsets[z]+fType,audio_fps=16000)

@@ -18,9 +18,10 @@ if __name__=="__main__":
 	#offsetAudio(vPath, aPath, offsets, ".mp4")
 	#jumble(vPath)
 
-	balanceBabble()
+	#balanceBabble()
+	addNoiseAndDownSample(vPath,"-7DbBabble.wav",offsets,".mp4")
 
-	#audioDownSample()
+	convertToMono(vPath,offsets,".mp4")
 	#clip=VideoFileClip("../bin/video/subclips/test1/test1.mp4")
 	#clip1=VideoFileClip("../bin/video/subclips/test1/test1+360.mp4")
 	#clip2=VideoFileClip("../bin/video/subclips/test1/test1-360.mp4")
